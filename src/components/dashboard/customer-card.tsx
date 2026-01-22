@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MoreHorizontal, Eye, Copy, Edit, Trash2, BrainCircuit } from 'lucide-react';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import type { Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,6 +24,7 @@ export function CustomerCard({ customer, onDelete }: CustomerCardProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
+  const db = useFirestore();
   const publicUrl = `${window.location.origin}/c/${customer.id}`;
 
   const copyToClipboard = () => {

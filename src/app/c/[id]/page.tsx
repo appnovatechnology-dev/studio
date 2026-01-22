@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import type { Customer } from '@/lib/types';
 import { PublicProjectView } from '@/components/projects/public-project-view';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,6 +33,7 @@ export default function PublicCustomerPage({ params }: PublicCustomerPageProps) 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const db = useFirestore();
 
   useEffect(() => {
     const fetchCustomer = async () => {
@@ -54,7 +55,7 @@ export default function PublicCustomerPage({ params }: PublicCustomerPageProps) 
     };
 
     fetchCustomer();
-  }, [params.id]);
+  }, [params.id, db]);
 
   if (loading) {
     return <PageSkeleton />;

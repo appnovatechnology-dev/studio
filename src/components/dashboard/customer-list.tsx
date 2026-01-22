@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import type { Customer } from '@/lib/types';
 import { CustomerCard } from './customer-card';
 import { AddCustomerDialog } from './add-customer-dialog';
@@ -11,8 +11,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function CustomerList() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const db = useFirestore();
 
-  const fetchCustomers = () => {
+  useEffect(() => {
     const q = query(collection(db, 'customers'), orderBy('name', 'asc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const customersData: Customer[] = [];
@@ -26,12 +27,7 @@ export function CustomerList() {
       setLoading(false);
     });
     return unsubscribe;
-  };
-
-  useEffect(() => {
-    const unsubscribe = fetchCustomers();
-    return () => unsubscribe();
-  }, []);
+  }, [db]);
 
   const handleCustomerChange = () => {
     // The onSnapshot listener will automatically refresh the list.

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, updateDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { useFirestore } from '@/firebase';
 import type { Customer, Project, Milestone, Update } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +17,7 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const db = useFirestore();
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'customers', customerId), (doc) => {
@@ -29,7 +30,7 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
       setLoading(false);
     });
     return () => unsub();
-  }, [customerId]);
+  }, [customerId, db]);
 
   const handleSaveProject = async (updatedProject: Project) => {
     if (!customer) return;

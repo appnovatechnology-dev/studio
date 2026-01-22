@@ -1,11 +1,19 @@
 'use client';
 
 import { LogOut, Rocket } from 'lucide-react';
-import { useAuth } from '@/components/auth-provider';
+import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
+import { signOut as firebaseSignOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
-  const { signOut } = useAuth();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await firebaseSignOut(auth);
+    router.push('/login');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -15,7 +23,7 @@ export function Header() {
           <span className="font-headline text-lg font-bold">ProjectView</span>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <Button variant="ghost" size="sm" onClick={signOut}>
+          <Button variant="ghost" size="sm" onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
