@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MoreHorizontal, Eye, Copy, Edit, Trash2, BrainCircuit } from 'lucide-react';
 import { doc, deleteDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import type { Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -37,23 +37,25 @@ export function CustomerCard({ customer, onDelete }: CustomerCardProps) {
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    try {
-      await deleteDoc(doc(db, 'customers', customer.id));
-      toast({
-        title: 'Customer Deleted',
-        description: `${customer.name} has been removed successfully.`,
+    const docRef = doc(db, 'customers', customer.id);
+    deleteDoc(docRef)
+      .then(() => {
+        toast({
+          title: 'Customer Deleted',
+          description: `${customer.name} has been removed successfully.`,
+        });
+        onDelete();
+      })
+      .catch(() => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsDeleting(false);
       });
-      onDelete();
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete customer.',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   return (

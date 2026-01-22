@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -35,31 +35,36 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    try {
-      const randomAvatar = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)];
-      await addDoc(collection(db, 'customers'), {
-        ...values,
-        avatarUrl: randomAvatar.imageUrl,
-        projects: [],
-        createdAt: serverTimestamp(),
+    const randomAvatar = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)];
+    const customerData = {
+      ...values,
+      avatarUrl: randomAvatar.imageUrl,
+      projects: [],
+      createdAt: serverTimestamp(),
+    };
+    const customersCollection = collection(db, 'customers');
+
+    addDoc(customersCollection, customerData)
+      .then(() => {
+        toast({
+          title: 'Success',
+          description: 'New customer has been added.',
+        });
+        form.reset();
+        setOpen(false);
+        onCustomerAdded();
+      })
+      .catch(() => {
+        const permissionError = new FirestorePermissionError({
+          path: customersCollection.path,
+          operation: 'create',
+          requestResourceData: customerData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setLoading(false);
       });
-      toast({
-        title: 'Success',
-        description: 'New customer has been added.',
-      });
-      form.reset();
-      setOpen(false);
-      onCustomerAdded();
-    } catch (error) {
-      console.error('Error adding customer: ', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to add customer. Please try again.',
-      });
-    } finally {
-      setLoading(false);
-    }
   }
 
   return (

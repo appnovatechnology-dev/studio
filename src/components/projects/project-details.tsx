@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, updateDoc, Timestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import type { Customer, Project, Milestone, Update } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,13 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
         console.error("No such customer!");
       }
       setLoading(false);
+    }, (error) => {
+      setLoading(false);
+      const permissionError = new FirestorePermissionError({
+        path: `customers/${customerId}`,
+        operation: 'get',
+      });
+      errorEmitter.emit('permission-error', permissionError);
     });
     return () => unsub();
   }, [customerId, db]);
@@ -42,26 +49,38 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
       newProjects[projectIndex] = updatedProject;
     }
 
-    try {
-      await updateDoc(customerRef, { projects: newProjects });
-      toast({ title: "Success", description: `Project "${updatedProject.name}" has been saved.` });
-    } catch (error) {
-      console.error("Error saving project: ", error);
-      toast({ variant: 'destructive', title: "Error", description: "Failed to save project." });
-    }
+    const updatedData = { projects: newProjects };
+    updateDoc(customerRef, updatedData)
+      .then(() => {
+        toast({ title: "Success", description: `Project "${updatedProject.name}" has been saved.` });
+      })
+      .catch(() => {
+        const permissionError = new FirestorePermissionError({
+          path: customerRef.path,
+          operation: 'update',
+          requestResourceData: updatedData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
   
   const handleDeleteProject = async (projectId: string) => {
     if (!customer) return;
     const customerRef = doc(db, 'customers', customerId);
     const newProjects = customer.projects.filter(p => p.id !== projectId);
-    try {
-      await updateDoc(customerRef, { projects: newProjects });
-      toast({ title: "Project Deleted", description: "The project has been removed." });
-    } catch (error) {
-      console.error("Error deleting project: ", error);
-      toast({ variant: 'destructive', title: "Error", description: "Failed to delete project." });
-    }
+    const updatedData = { projects: newProjects };
+    updateDoc(customerRef, updatedData)
+      .then(() => {
+        toast({ title: "Project Deleted", description: "The project has been removed." });
+      })
+      .catch(() => {
+        const permissionError = new FirestorePermissionError({
+          path: customerRef.path,
+          operation: 'update',
+          requestResourceData: updatedData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const handleAddProject = async () => {
@@ -82,14 +101,19 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
     };
 
     const newProjects = [...customer.projects, newProject];
-
-    try {
-        await updateDoc(customerRef, { projects: newProjects });
+    const updatedData = { projects: newProjects };
+    updateDoc(customerRef, updatedData)
+      .then(() => {
         toast({ title: "Project Added", description: "A new project has been added." });
-    } catch(error) {
-        console.error("Error adding project: ", error);
-        toast({ variant: 'destructive', title: "Error", description: "Failed to add a new project." });
-    }
+      })
+      .catch(() => {
+        const permissionError = new FirestorePermissionError({
+          path: customerRef.path,
+          operation: 'update',
+          requestResourceData: updatedData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   if (loading) {

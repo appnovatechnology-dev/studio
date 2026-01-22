@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import type { Customer } from '@/lib/types';
 import { CustomerCard } from './customer-card';
 import { AddCustomerDialog } from './add-customer-dialog';
@@ -23,8 +23,12 @@ export function CustomerList() {
       setCustomers(customersData);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching customers: ", error);
       setLoading(false);
+      const permissionError = new FirestorePermissionError({
+        path: 'customers',
+        operation: 'list',
+      });
+      errorEmitter.emit('permission-error', permissionError);
     });
     return unsubscribe;
   }, [db]);
