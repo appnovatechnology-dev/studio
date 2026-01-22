@@ -1,0 +1,131 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { doc, onSnapshot, updateDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Customer, Project, Milestone, Update } from '@/lib/types';
+import { v4 as uuidv4 } from 'uuid';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ProjectCard } from './project-card';
+import { PlusCircle } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+
+export function ProjectDetails({ customerId }: { customerId: string }) {
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'customers', customerId), (doc) => {
+      if (doc.exists()) {
+        setCustomer({ id: doc.id, ...doc.data() } as Customer);
+      } else {
+        // Handle customer not found
+        console.error("No such customer!");
+      }
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [customerId]);
+
+  const handleSaveProject = async (updatedProject: Project) => {
+    if (!customer) return;
+    const customerRef = doc(db, 'customers', customerId);
+    const projectIndex = customer.projects.findIndex(p => p.id === updatedProject.id);
+    
+    const newProjects = [...customer.projects];
+    if (projectIndex > -1) {
+      newProjects[projectIndex] = updatedProject;
+    }
+
+    try {
+      await updateDoc(customerRef, { projects: newProjects });
+      toast({ title: "Success", description: `Project "${updatedProject.name}" has been saved.` });
+    } catch (error) {
+      console.error("Error saving project: ", error);
+      toast({ variant: 'destructive', title: "Error", description: "Failed to save project." });
+    }
+  };
+  
+  const handleDeleteProject = async (projectId: string) => {
+    if (!customer) return;
+    const customerRef = doc(db, 'customers', customerId);
+    const newProjects = customer.projects.filter(p => p.id !== projectId);
+    try {
+      await updateDoc(customerRef, { projects: newProjects });
+      toast({ title: "Project Deleted", description: "The project has been removed." });
+    } catch (error) {
+      console.error("Error deleting project: ", error);
+      toast({ variant: 'destructive', title: "Error", description: "Failed to delete project." });
+    }
+  };
+
+  const handleAddProject = async () => {
+    if (!customer) return;
+    const customerRef = doc(db, 'customers', customerId);
+
+    const newMilestone: Milestone = { id: uuidv4(), name: 'Project Kick-off', completed: false };
+    const newUpdate: Update = { id: uuidv4(), date: Timestamp.now(), title: 'Project Created', description: 'The project has been initialized.' };
+
+    const newProject: Project = {
+      id: uuidv4(),
+      name: 'New Project',
+      description: 'A brief description of the new project.',
+      status: 'Prototyping',
+      progress: 0,
+      milestones: [newMilestone],
+      updates: [newUpdate]
+    };
+
+    const newProjects = [...customer.projects, newProject];
+
+    try {
+        await updateDoc(customerRef, { projects: newProjects });
+        toast({ title: "Project Added", description: "A new project has been added." });
+    } catch(error) {
+        console.error("Error adding project: ", error);
+        toast({ variant: 'destructive', title: "Error", description: "Failed to add a new project." });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container py-8">
+        <Skeleton className="h-8 w-64 mb-2" />
+        <Skeleton className="h-6 w-48 mb-8" />
+        <div className="grid gap-8 lg:grid-cols-2">
+          <Skeleton className="h-96 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!customer) {
+    return <div className="text-center py-16">Customer not found.</div>;
+  }
+
+  return (
+    <div className="container py-8">
+      <div className="mb-8">
+        <Button variant="ghost" asChild className="mb-4">
+            <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to Dashboard</Link>
+        </Button>
+        <h1 className="font-headline text-3xl font-bold">Manage Projects for {customer.name}</h1>
+        <p className="text-muted-foreground">Add, edit, and delete projects below.</p>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-1 xl:grid-cols-2">
+        {customer.projects.map(project => (
+          <ProjectCard key={project.id} project={project} onSave={handleSaveProject} onDelete={handleDeleteProject} />
+        ))}
+        <Button variant="outline" className="h-full min-h-[200px] border-2 border-dashed" onClick={handleAddProject}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New Project
+        </Button>
+      </div>
+    </div>
+  );
+}

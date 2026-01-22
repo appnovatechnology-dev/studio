@@ -1,16 +1,22 @@
 'use client';
 
 import { AuthGuard } from '@/components/auth-guard';
-import { CustomerList } from '@/components/dashboard/customer-list';
 import { Header } from '@/components/header';
+import { ProjectDetails } from '@/components/projects/project-details';
 
-export default function DashboardPage() {
+type AdminPageProps = {
+  params: {
+    id: string;
+  };
+};
+
+export default function AdminPage({ params }: AdminPageProps) {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background">
         <Header />
         <main>
-          <CustomerList />
+          <ProjectDetails customerId={params.id} />
         </main>
       </div>
     </AuthGuard>

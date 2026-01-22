@@ -1,0 +1,28 @@
+{
+  "customer": {
+    "name": "string",
+    "email": "string",
+    "avatarUrl": "string",
+    "projects": "Array<Project>"
+  },
+  "project": {
+    "id": "string",
+    "name": "string",
+    "description": "string",
+    "status": "('Prototyping' | 'Development' | 'Deployed')",
+    "progress": "number (0-100)",
+    "milestones": "Array<Milestone>",
+    "updates": "Array<Update>"
+  },
+  "milestone": {
+    "id": "string",
+    "name": "string",
+    "completed": "boolean"
+  },
+  "update": {
+    "id": "string",
+    "date": "timestamp",
+    "title": "string",
+    "description": "string"
+  }
+}
