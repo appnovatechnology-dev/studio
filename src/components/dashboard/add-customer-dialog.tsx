@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,15 +36,19 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     const randomAvatar = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)];
+    const customersCollection = collection(db, 'customers');
+    const newCustomerRef = doc(customersCollection);
+    const customerId = newCustomerRef.id;
+
     const customerData = {
+      id: customerId,
       ...values,
       avatarUrl: randomAvatar.imageUrl,
       projects: [],
       createdAt: serverTimestamp(),
     };
-    const customersCollection = collection(db, 'customers');
 
-    addDoc(customersCollection, customerData)
+    setDoc(newCustomerRef, customerData)
       .then(() => {
         toast({
           title: 'Success',
@@ -56,7 +60,7 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
       })
       .catch(() => {
         const permissionError = new FirestorePermissionError({
-          path: customersCollection.path,
+          path: newCustomerRef.path,
           operation: 'create',
           requestResourceData: customerData,
         });
