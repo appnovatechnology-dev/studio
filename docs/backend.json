@@ -1,28 +1,257 @@
 {
-  "customer": {
-    "name": "string",
-    "email": "string",
-    "avatarUrl": "string",
-    "projects": "Array<Project>"
+  "entities": {
+    "Customer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Customer",
+      "type": "object",
+      "description": "Represents a customer of the software development agency.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Customer entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the customer."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the customer.",
+          "format": "email"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of the customer's avatar image.",
+          "format": "uri"
+        },
+        "projectIds": {
+          "type": "array",
+          "description": "References to Projects. (Relationship: Customer 1:N Project)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email"
+      ]
+    },
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a project for a customer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Project entity."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Reference to Customer. (Relationship: Customer 1:N Project)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the project."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the project."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the project (e.g., 'Prototyping', 'Development', 'Deployed')."
+        },
+        "progress": {
+          "type": "number",
+          "description": "The progress of the project (0-100)."
+        },
+        "milestoneIds": {
+          "type": "array",
+          "description": "References to Milestones. (Relationship: Project 1:N Milestone)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "updateIds": {
+          "type": "array",
+          "description": "References to Updates. (Relationship: Project 1:N Update)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "customerId",
+        "name",
+        "description",
+        "status",
+        "progress"
+      ]
+    },
+    "Milestone": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Milestone",
+      "type": "object",
+      "description": "Represents a milestone within a project.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Milestone entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N Milestone)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the milestone."
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Indicates whether the milestone is completed."
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "name",
+        "completed"
+      ]
+    },
+    "Update": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Update",
+      "type": "object",
+      "description": "Represents an update for a project.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Update entity."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Reference to Project. (Relationship: Project 1:N Update)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date of the update.",
+          "format": "date-time"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the update."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the update."
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "date",
+        "title",
+        "description"
+      ]
+    }
   },
-  "project": {
-    "id": "string",
-    "name": "string",
-    "description": "string",
-    "status": "('Prototyping' | 'Development' | 'Deployed')",
-    "progress": "number (0-100)",
-    "milestones": "Array<Milestone>",
-    "updates": "Array<Update>"
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
-  "milestone": {
-    "id": "string",
-    "name": "string",
-    "completed": "boolean"
-  },
-  "update": {
-    "id": "string",
-    "date": "timestamp",
-    "title": "string",
-    "description": "string"
+  "firestore": {
+    "structure": [
+      {
+        "path": "/customers/{customerId}",
+        "definition": {
+          "entityName": "Customer",
+          "schema": {
+            "$ref": "#/backend/entities/Customer"
+          },
+          "description": "Stores customer data. Allows public read access to single documents via ID.  Admins (authenticated users) have full access. No denormalization required.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier of the customer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores project data related to a specific customer. Includes denormalized 'customerId' for authorization independence.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier of the customer."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}/projects/{projectId}/milestones/{milestoneId}",
+        "definition": {
+          "entityName": "Milestone",
+          "schema": {
+            "$ref": "#/backend/entities/Milestone"
+          },
+          "description": "Stores milestone data related to a specific project. Includes denormalized 'customerId' for authorization independence.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier of the customer."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            },
+            {
+              "name": "milestoneId",
+              "description": "The unique identifier of the milestone."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/customers/{customerId}/projects/{projectId}/updates/{updateId}",
+        "definition": {
+          "entityName": "Update",
+          "schema": {
+            "$ref": "#/backend/entities/Update"
+          },
+          "description": "Stores update data related to a specific project. Includes denormalized 'customerId' for authorization independence.",
+          "params": [
+            {
+              "name": "customerId",
+              "description": "The unique identifier of the customer."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique identifier of the project."
+            },
+            {
+              "name": "updateId",
+              "description": "The unique identifier of the update."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure secure access and manageability of customer, project, milestone, and update data. It prioritizes authorization independence and clear access patterns.  \n\n**Authorization Independence:** The structure uses path-based ownership for customers and denormalization of customerId to the projects, milestones, and updates collections. This allows security rules to validate ownership without needing to perform `get()` operations to fetch parent document data.  \n\n**QAPs Support:** The structure supports the application's QAPs as follows: \n\n*   **Admin Access:** Admins are granted full access to all data via a simple `allow read, write: if request.auth.uid != null;` rule (applied at the database level, and refined per collection). This satisfies the requirement that only authenticated users (admins) can create, update, or delete any data.  \n*   **Public Access:** Public access is supported for individual customer documents via the `/customers/{customerId}` path. Security rules restrict access to only `get` operations for non-authenticated users and require authentication for `list` operations. This prevents non-authenticated users from listing the entire customers collection, satisfying the critical security requirement to prevent customers from seeing each other's data.  \n*   **Data Isolation:** By storing customer-owned data (projects, milestones, updates) within the `/customers/{customerId}` subcollections, the structure ensures that customers can only access data associated with their own customer ID."
   }
 }

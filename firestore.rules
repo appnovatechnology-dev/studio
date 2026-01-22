@@ -1,12 +1,187 @@
+/**
+ * This ruleset enforces an "Authenticated Admin" security model for a software
+ * agency's customer and project management application.
+ *
+ * Core Philosophy:
+ * The security model is straightforward: any authenticated user is considered an
+ * "admin" and is granted full create, read, update, and delete (CRUD) permissions
+ * across all data. Unauthenticated (public) users have highly restricted,
+ * read-only access. This model is ideal for internal tools or admin dashboards
+ * where all signed-in users are trusted.
+ *
+ * Data Structure:
+ * Data is organized hierarchically under a top-level `customers` collection.
+ * Each customer document at `/customers/{customerId}` serves as the root for
+ * its related data, including subcollections for `projects`, `milestones`, and
+ * `updates`. This structure provides clear data isolation per customer.
+ *
+ * Key Security Decisions:
+ * - Admin-by-Authentication: Any user who is signed in (`request.auth != null`)
+ *   is granted full write permissions. There are no granular roles like 'editor'
+ *   or 'viewer'.
+ * - Public Read-Only (Limited): Unauthenticated users can `get` a specific
+ *   customer document if they know its ID. However, they are explicitly blocked
+ *   from using `list` to discover all customers, preventing data leakage.
+ * - Private Subcollections: All nested data (projects, milestones, updates) is
+ *   strictly private and can only be accessed by authenticated "admin" users.
+ *
+ * Denormalization for Authorization:
+ * To ensure data integrity, relational keys are denormalized and validated.
+ * For example, a new Project document created at `/customers/acme/projects/proj123`
+ * must contain `customerId: 'acme'` and `id: 'proj123'` fields in its data.
+ * These fields are enforced as immutable after creation to maintain a stable
+ * relationship between documents.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper Functions
+
+    /**
+     * Checks if the user is authenticated. This is the primary condition for
+     * all write operations and most read operations in this "Admin" model.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Validates relational integrity on Customer document creation.
+     * Ensures the document's internal ID matches its path ID.
+     */
+    function hasValidCustomerData(customerId) {
+      let data = request.resource.data;
+      return data.id == customerId;
+    }
+
+    /**
+     * Enforces immutability of the Customer document's ID on update.
+     * Prevents changing the core identifier of the customer document.
+     */
+    function canUpdateCustomer() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates relational integrity on Project document creation.
+     * Ensures the new document's IDs match the IDs from the path.
+     */
+    function hasValidProjectData(customerId, projectId) {
+      let data = request.resource.data;
+      return data.id == projectId && data.customerId == customerId;
+    }
+
+    /**
+     * Enforces immutability of key relational fields on Project update.
+     */
+    function canUpdateProject() {
+      let incomingData = request.resource.data;
+      let existingData = resource.data;
+      return incomingData.id == existingData.id && incomingData.customerId == existingData.customerId;
+    }
+
+    /**
+     * Validates relational integrity on Milestone document creation.
+     * Ensures the new document's IDs match the IDs from the path.
+     */
+    function hasValidMilestoneData(projectId, milestoneId) {
+      let data = request.resource.data;
+      return data.id == milestoneId && data.projectId == projectId;
+    }
+
+    /**
+     * Enforces immutability of key relational fields on Milestone update.
+     */
+    function canUpdateMilestone() {
+      let incomingData = request.resource.data;
+      let existingData = resource.data;
+      return incomingData.id == existingData.id && incomingData.projectId == existingData.projectId;
+    }
+
+    /**
+     * Validates relational integrity on Update document creation.
+     * Ensures the new document's IDs match the IDs from the path.
+     */
+    function hasValidUpdateData(projectId, updateId) {
+      let data = request.resource.data;
+      return data.id == updateId && data.projectId == projectId;
+    }
+
+    /**
+     * Enforces immutability of key relational fields on project Update update.
+     */
+    function canUpdateUpdate() {
+      let incomingData = request.resource.data;
+      let existingData = resource.data;
+      return incomingData.id == existingData.id && incomingData.projectId == existingData.projectId;
+    }
+
+    /**
+     * @description Rules for the top-level customers collection.
+     * Allows public reads for single documents but restricts listing to admins.
+     * All write operations require admin (signed-in) status.
+     * @path /customers/{customerId}
+     * @allow (get) Any user, signed in or not, can fetch a specific customer by ID.
+     * @allow (create) An admin creates a new customer document. `auth.uid` is not null.
+     * @deny (list) An unauthenticated user tries to list all customers.
+     * @deny (create) An unauthenticated user tries to create a customer.
+     * @principle "Public Read, Admin Write" with restricted listing to prevent data scraping.
+     */
     match /customers/{customerId} {
-      // Public users can read a single customer's data
       allow get: if true;
-      
-      // Authenticated admins can perform all other actions
-      allow list, create, update, delete: if request.auth != null;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && hasValidCustomerData(customerId);
+      allow update: if isSignedIn() && resource != null && canUpdateCustomer();
+      allow delete: if isSignedIn() && resource != null;
+
+      /**
+       * @description Rules for the projects subcollection.
+       * All access (read and write) is restricted to authenticated admins.
+       * @path /customers/{customerId}/projects/{projectId}
+       * @allow (get, list, create) An admin accesses project data. `auth.uid` is not null.
+       * @deny (get, list, create) An unauthenticated user tries to access any project data.
+       * @principle Enforces that all project-related data is private to the organization.
+       */
+      match /projects/{projectId} {
+        allow get: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create: if isSignedIn() && hasValidProjectData(customerId, projectId);
+        allow update: if isSignedIn() && resource != null && canUpdateProject();
+        allow delete: if isSignedIn() && resource != null;
+
+        /**
+         * @description Rules for the milestones subcollection.
+         * All access is restricted to authenticated admins.
+         * @path /customers/{customerId}/projects/{projectId}/milestones/{milestoneId}
+         * @allow (get, list, create) An admin accesses milestone data. `auth.uid` is not null.
+         * @deny (get, list, create) An unauthenticated user tries to access any milestone data.
+         * @principle Ensures granular project data remains private to the organization.
+         */
+        match /milestones/{milestoneId} {
+          allow get: if isSignedIn();
+          allow list: if isSignedIn();
+          allow create: if isSignedIn() && hasValidMilestoneData(projectId, milestoneId);
+          allow update: if isSignedIn() && resource != null && canUpdateMilestone();
+          allow delete: if isSignedIn() && resource != null;
+        }
+
+        /**
+         * @description Rules for the updates subcollection.
+         * All access is restricted to authenticated admins.
+         * @path /customers/{customerId}/projects/{projectId}/updates/{updateId}
+         * @allow (get, list, create) An admin accesses project update data. `auth.uid` is not null.
+         * @deny (get, list, create) An unauthenticated user tries to access any update data.
+         * @principle Ensures granular project data remains private to the organization.
+         */
+        match /updates/{updateId} {
+          allow get: if isSignedIn();
+          allow list: if isSignedIn();
+          allow create: if isSignedIn() && hasValidUpdateData(projectId, updateId);
+          allow update: if isSignedIn() && resource != null && canUpdateUpdate();
+          allow delete: if isSignedIn() && resource != null;
+        }
+      }
     }
   }
 }
