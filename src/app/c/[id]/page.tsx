@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { Customer } from '@/lib/types';
@@ -8,9 +8,9 @@ import { PublicProjectView } from '@/components/projects/public-project-view';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type PublicCustomerPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 function PageSkeleton() {
@@ -30,6 +30,7 @@ function PageSkeleton() {
 }
 
 export default function PublicCustomerPage({ params }: PublicCustomerPageProps) {
+  const resolvedParams = use(params);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -38,7 +39,7 @@ export default function PublicCustomerPage({ params }: PublicCustomerPageProps) 
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
-        const docRef = doc(db, 'customers', params.id);
+        const docRef = doc(db, 'customers', resolvedParams.id);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -55,7 +56,7 @@ export default function PublicCustomerPage({ params }: PublicCustomerPageProps) 
     };
 
     fetchCustomer();
-  }, [params.id, db]);
+  }, [resolvedParams.id, db]);
 
   if (loading) {
     return <PageSkeleton />;
