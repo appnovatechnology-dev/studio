@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -64,6 +64,14 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
     },
   });
 
+  // Sync form with external project data changes
+  useEffect(() => {
+    form.reset({
+      ...project,
+      status: project.status || 'Prototyping',
+    });
+  }, [project, form]);
+
   const { fields: milestones, append: appendMilestone, remove: removeMilestone } = useFieldArray({
     control: form.control,
     name: 'milestones',
@@ -86,7 +94,7 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
     const updatedData = { ...data, progress: Math.round(progress) };
     await onSave({ ...project, ...updatedData });
     setIsSaving(false);
-    form.reset(updatedData); // Re-sync form state after save
+    // form.reset(updatedData) has been removed to prevent race conditions.
   };
 
   const handleDeleteProject = async () => {
