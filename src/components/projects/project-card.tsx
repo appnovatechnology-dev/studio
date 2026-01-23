@@ -71,17 +71,19 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
     name: 'updates',
   });
 
+  const watchedMilestones = form.watch('milestones');
   const progress = useMemo(() => {
-    const completedMilestones = form.watch('milestones').filter(m => m.completed).length;
-    const totalMilestones = form.watch('milestones').length;
+    const completedMilestones = watchedMilestones.filter(m => m.completed).length;
+    const totalMilestones = watchedMilestones.length;
     return totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
-  }, [form.watch('milestones')]);
+  }, [watchedMilestones]);
 
   const onSubmit = async (data: z.infer<typeof projectSchema>) => {
     setIsSaving(true);
-    await onSave({ ...project, ...data, progress });
+    const updatedData = { ...data, progress: Math.round(progress) };
+    await onSave({ ...project, ...updatedData });
     setIsSaving(false);
-    form.reset(data); // Re-sync form state after save
+    form.reset(updatedData); // Re-sync form state after save
   };
 
   const handleDeleteProject = async () => {
