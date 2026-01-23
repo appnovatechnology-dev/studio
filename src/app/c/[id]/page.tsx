@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { doc, onSnapshot, DocumentSnapshot, DocumentData, FirestoreError } from 'firebase/firestore';
+import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import type { Customer } from '@/lib/types';
 import { PublicProjectView } from '@/components/projects/public-project-view';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -37,26 +37,35 @@ export default function PublicCustomerPage({ params }: PublicCustomerPageProps) 
   const db = useFirestore();
 
   useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        const docRef = doc(db, 'customers', resolvedParams.id);
-        const docSnap = await getDoc(docRef);
-
+    if (!resolvedParams?.id || !db) {
+        setLoading(false);
+        setError(true);
+        return;
+    }
+    const docRef = doc(db, 'customers', resolvedParams.id);
+    const unsubscribe = onSnapshot(docRef,
+      (docSnap: DocumentSnapshot<DocumentData>) => {
         if (docSnap.exists()) {
           setCustomer({ id: docSnap.id, ...docSnap.data() } as Customer);
+          setError(false);
         } else {
           setError(true);
         }
-      } catch (err) {
-        console.error(err);
+        setLoading(false);
+      },
+      (err: FirestoreError) => {
+        const permissionError = new FirestorePermissionError({
+            path: `customers/${resolvedParams.id}`,
+            operation: 'get',
+        });
+        errorEmitter.emit('permission-error', permissionError);
         setError(true);
-      } finally {
         setLoading(false);
       }
-    };
+    );
 
-    fetchCustomer();
-  }, [resolvedParams.id, db]);
+    return () => unsubscribe();
+  }, [resolvedParams?.id, db]);
 
   if (loading) {
     return <PageSkeleton />;
