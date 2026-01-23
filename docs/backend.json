@@ -10,6 +10,10 @@
           "type": "string",
           "description": "Unique identifier for the Customer entity."
         },
+        "customerCode": {
+          "type": "string",
+          "description": "A unique code for the customer to be easily searchable."
+        },
         "name": {
           "type": "string",
           "description": "The name of the customer."
@@ -18,11 +22,6 @@
           "type": "string",
           "description": "The email address of the customer.",
           "format": "email"
-        },
-        "avatarUrl": {
-          "type": "string",
-          "description": "URL of the customer's avatar image.",
-          "format": "uri"
         },
         "projectIds": {
           "type": "array",
@@ -34,6 +33,7 @@
       },
       "required": [
         "id",
+        "customerCode",
         "name",
         "email"
       ]
@@ -255,3 +255,4 @@
     "reasoning": "The Firestore structure is designed to ensure secure access and manageability of customer, project, milestone, and update data. It prioritizes authorization independence and clear access patterns.  \n\n**Authorization Independence:** The structure uses path-based ownership for customers and denormalization of customerId to the projects, milestones, and updates collections. This allows security rules to validate ownership without needing to perform `get()` operations to fetch parent document data.  \n\n**QAPs Support:** The structure supports the application's QAPs as follows: \n\n*   **Admin Access:** Admins are granted full access to all data via a simple `allow read, write: if request.auth.uid != null;` rule (applied at the database level, and refined per collection). This satisfies the requirement that only authenticated users (admins) can create, update, or delete any data.  \n*   **Public Access:** Public access is supported for individual customer documents via the `/customers/{customerId}` path. Security rules restrict access to only `get` operations for non-authenticated users and require authentication for `list` operations. This prevents non-authenticated users from listing the entire customers collection, satisfying the critical security requirement to prevent customers from seeing each other's data.  \n*   **Data Isolation:** By storing customer-owned data (projects, milestones, updates) within the `/customers/{customerId}` subcollections, the structure ensures that customers can only access data associated with their own customer ID."
   }
 }
+    

@@ -29,8 +29,10 @@ export type Project = {
 
 export type Customer = {
   id: string;
+  customerCode: string;
   name: string;
   email: string;
-  avatarUrl: string;
   projects: Project[];
 };
+
+    

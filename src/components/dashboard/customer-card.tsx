@@ -1,17 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { MoreHorizontal, Eye, Copy, Edit, Trash2, BrainCircuit } from 'lucide-react';
+import { MoreHorizontal, Eye, Copy, Edit, Trash2, BrainCircuit, Building } from 'lucide-react';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import type { Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { GenerateSummaryDialog } from './generate-summary-dialog';
 
@@ -27,7 +25,6 @@ export function CustomerCard({ customer }: CustomerCardProps) {
   const isMounted = useRef(true);
 
   useEffect(() => {
-    // Set the mounted ref to false when the component unmounts
     return () => {
       isMounted.current = false;
     };
@@ -52,7 +49,6 @@ export function CustomerCard({ customer }: CustomerCardProps) {
           title: 'Customer Deleted',
           description: `${customer.name} has been removed successfully.`,
         });
-        // The parent's onSnapshot listener will handle the UI update.
       })
       .catch(() => {
         const permissionError = new FirestorePermissionError({
@@ -62,7 +58,6 @@ export function CustomerCard({ customer }: CustomerCardProps) {
         errorEmitter.emit('permission-error', permissionError);
       })
       .finally(() => {
-        // Only update state if the component is still mounted.
         if (isMounted.current) {
           setIsDeleting(false);
         }
@@ -73,12 +68,9 @@ export function CustomerCard({ customer }: CustomerCardProps) {
     <>
       <Card className="flex flex-col">
         <CardHeader className="flex flex-row items-center gap-4">
-          <Avatar className="h-12 w-12">
-            <AvatarImage asChild src={customer.avatarUrl} alt={customer.name}>
-                <Image src={customer.avatarUrl} alt={customer.name} width={48} height={48} data-ai-hint="person portrait" />
-            </AvatarImage>
-            <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
-          </Avatar>
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+            <Building className="h-6 w-6 text-muted-foreground" />
+          </div>
           <div className="flex-1">
             <CardTitle className="font-headline">{customer.name}</CardTitle>
             <CardDescription>{customer.email}</CardDescription>
@@ -134,7 +126,10 @@ export function CustomerCard({ customer }: CustomerCardProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </CardHeader>
-        <CardContent className="flex-1">
+        <CardContent className="flex-1 space-y-2">
+            <p className="text-sm text-muted-foreground">
+                Customer Code: <span className="font-mono text-foreground">{customer.customerCode}</span>
+            </p>
           <p className="text-sm text-muted-foreground">
             {customer.projects.length} project(s)
           </p>
@@ -144,3 +139,4 @@ export function CustomerCard({ customer }: CustomerCardProps) {
     </>
   );
 }
+    

@@ -1,11 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import { format } from 'date-fns';
-import { CheckCircle, Circle, Rocket } from 'lucide-react';
+import { CheckCircle, Circle, Rocket, Building } from 'lucide-react';
 import type { Customer, Project, Update } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
@@ -84,12 +82,9 @@ export function PublicProjectView({ customer }: { customer: Customer }) {
   return (
     <div className="container py-8 md:py-12">
       <header className="text-center mb-12">
-        <Avatar className="h-24 w-24 mx-auto mb-4 border-4 border-background ring-2 ring-primary">
-          <AvatarImage asChild src={customer.avatarUrl} alt={customer.name}>
-             <Image src={customer.avatarUrl} alt={customer.name} width={96} height={96} data-ai-hint="person portrait" />
-          </AvatarImage>
-          <AvatarFallback className="text-3xl">{customer.name.charAt(0)}</AvatarFallback>
-        </Avatar>
+        <div className="h-24 w-24 mx-auto mb-4 border-4 border-background ring-2 ring-primary rounded-full flex items-center justify-center bg-muted">
+            <Building className="h-12 w-12 text-primary" />
+        </div>
         <h1 className="font-headline text-4xl font-bold">Project Progress for {customer.name}</h1>
         <p className="text-muted-foreground mt-2">Here is a live look at the status of your projects.</p>
       </header>
@@ -114,3 +109,5 @@ export function PublicProjectView({ customer }: { customer: Customer }) {
     </div>
   );
 }
+
+    

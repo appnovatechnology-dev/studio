@@ -52,7 +52,7 @@ service cloud.firestore {
      */
     function hasValidCustomerData(customerId) {
       let data = request.resource.data;
-      return data.id == customerId;
+      return data.id == customerId && data.customerCode != null && data.customerCode is string;
     }
 
     /**
@@ -60,7 +60,7 @@ service cloud.firestore {
      * Prevents changing the core identifier of the customer document.
      */
     function canUpdateCustomer() {
-      return request.resource.data.id == resource.data.id;
+      return request.resource.data.id == resource.data.id && request.resource.data.customerCode == resource.data.customerCode;
     }
 
     /**
@@ -185,3 +185,4 @@ service cloud.firestore {
     }
   }
 }
+    

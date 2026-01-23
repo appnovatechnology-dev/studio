@@ -8,11 +8,11 @@ import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -35,15 +35,15 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    const randomAvatar = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)];
     const customersCollection = collection(db, 'customers');
     const newCustomerRef = doc(customersCollection);
     const customerId = newCustomerRef.id;
+    const customerCode = uuidv4().split('-')[0].toUpperCase();
 
     const customerData = {
       id: customerId,
+      customerCode: customerCode,
       ...values,
-      avatarUrl: randomAvatar.imageUrl,
       projects: [],
       createdAt: serverTimestamp(),
     };
@@ -52,7 +52,7 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
       .then(() => {
         toast({
           title: 'Success',
-          description: 'New customer has been added.',
+          description: `New customer added with code: ${customerCode}`,
         });
         form.reset();
         setOpen(false);
@@ -122,3 +122,4 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
     </Dialog>
   );
 }
+    
