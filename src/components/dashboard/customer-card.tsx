@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { MoreHorizontal, Eye, Copy, Edit, Trash2, BrainCircuit, Building } from 'lucide-react';
+import { MoreHorizontal, Eye, Copy, Edit, Trash2, Building } from 'lucide-react';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
 import type { Customer } from '@/lib/types';
@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { GenerateSummaryDialog } from './generate-summary-dialog';
 
 type CustomerCardProps = {
   customer: Customer;
@@ -89,12 +88,6 @@ export function CustomerCard({ customer }: CustomerCardProps) {
             <DropdownMenuItem onClick={copyToClipboard}>
               <Copy className="mr-2 h-4 w-4" /> Copy Link
             </DropdownMenuItem>
-            
-            <GenerateSummaryDialog customer={customer}>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
-              </DropdownMenuItem>
-            </GenerateSummaryDialog>
 
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

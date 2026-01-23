@@ -4,13 +4,13 @@ import { useState, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Trash2, PlusCircle } from 'lucide-react';
+import { Trash2, PlusCircle, MoreHorizontal, BrainCircuit } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { Project, Milestone, Update, ProjectStatus } from '@/lib/types';
 import { projectStatuses } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +22,8 @@ import { MilestoneItem } from './milestone-item';
 import { UpdateItem } from './update-item';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { GenerateProjectSummaryDialog } from './generate-project-summary-dialog';
 
 const milestoneSchema = z.object({
   id: z.string(),
@@ -105,30 +107,73 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Input {...field} className="text-xl font-headline font-bold border-0 shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea {...field} className="text-sm text-muted-foreground border-0 shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 resize-none" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-1.5">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input {...field} className="text-xl font-headline font-bold border-0 shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea {...field} className="text-sm text-muted-foreground border-0 shadow-none p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 resize-none" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <GenerateProjectSummaryDialog project={project}>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
+                    </DropdownMenuItem>
+                  </GenerateProjectSummaryDialog>
+                  <DropdownMenuSeparator />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete Project
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this project?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete the '{project.name}' project. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteProject} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                          {isDeleting ? 'Deleting...' : 'Delete'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
 
           <CardContent className="space-y-6">
@@ -193,31 +238,10 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
             </div>
           </CardContent>
 
-          <div className="p-6 pt-0 flex justify-between items-center">
+          <div className="p-6 pt-0">
              <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
               {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" type="button">
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete Project
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this project?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete the '{project.name}' project. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteProject} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                    {isDeleting ? 'Deleting...' : 'Delete'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           </div>
         </form>
       </Form>
