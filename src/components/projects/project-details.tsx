@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, updateDoc, Timestamp } from 'firebase/firestore';
 import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
-import type { Customer, Project, Milestone, Update } from '@/lib/types';
+import { type Customer, type Project, type Milestone, type Update, projectStatuses } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -93,7 +93,11 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
 
     const customerRef = doc(db, 'customers', customerId);
 
-    const newMilestone: Milestone = { id: uuidv4(), name: 'Project Kick-off', completed: false };
+    const newMilestones: Milestone[] = projectStatuses.map((status) => ({
+      id: uuidv4(),
+      name: status,
+      completed: false,
+    }));
     const newUpdate: Update = { id: uuidv4(), date: Timestamp.now(), title: 'Project Created', description: 'The project has been initialized.' };
 
     const newProject: Project = {
@@ -102,7 +106,7 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
       description: values.description,
       status: 'Prototyping',
       progress: 0,
-      milestones: [newMilestone],
+      milestones: newMilestones,
       updates: [newUpdate]
     };
 
