@@ -13,9 +13,9 @@ export type Update = {
   description: string;
 };
 
-export type ProjectStatus = 'Prototyping' | 'Development' | 'Deployed';
+export type ProjectStatus = 'Prototyping' | 'Developing' | 'Testing' | 'Debugging' | 'Deploying' | 'Deployed';
 
-export const projectStatuses: ProjectStatus[] = ['Prototyping', 'Development', 'Deployed'];
+export const projectStatuses: ProjectStatus[] = ['Prototyping', 'Developing', 'Testing', 'Debugging', 'Deploying', 'Deployed'];
 
 export type Project = {
   id: string;

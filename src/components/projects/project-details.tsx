@@ -12,10 +12,14 @@ import { ProjectCard } from './project-card';
 import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { AddProjectDialog, addProjectFormSchema } from './add-project-dialog';
+import type * as z from 'zod';
 
 export function ProjectDetails({ customerId }: { customerId: string }) {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAddProjectDialogOpen, setAddProjectDialogOpen] = useState(false);
+  const [isAddingProject, setIsAddingProject] = useState(false);
   const { toast } = useToast();
   const db = useFirestore();
 
@@ -83,8 +87,10 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
       });
   };
 
-  const handleAddProject = async () => {
+  const handleAddProject = async (values: z.infer<typeof addProjectFormSchema>) => {
     if (!customer) return;
+    setIsAddingProject(true);
+
     const customerRef = doc(db, 'customers', customerId);
 
     const newMilestone: Milestone = { id: uuidv4(), name: 'Project Kick-off', completed: false };
@@ -92,8 +98,8 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
 
     const newProject: Project = {
       id: uuidv4(),
-      name: 'New Project',
-      description: 'A brief description of the new project.',
+      name: values.name,
+      description: values.description,
       status: 'Prototyping',
       progress: 0,
       milestones: [newMilestone],
@@ -102,9 +108,11 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
 
     const newProjects = [...customer.projects, newProject];
     const updatedData = { projects: newProjects };
+    
     updateDoc(customerRef, updatedData)
       .then(() => {
         toast({ title: "Project Added", description: "A new project has been added." });
+        setAddProjectDialogOpen(false);
       })
       .catch(() => {
         const permissionError = new FirestorePermissionError({
@@ -113,6 +121,9 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
           requestResourceData: updatedData,
         });
         errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsAddingProject(false);
       });
   };
 
@@ -147,10 +158,16 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
         {customer.projects.map(project => (
           <ProjectCard key={project.id} project={project} onSave={handleSaveProject} onDelete={handleDeleteProject} />
         ))}
-        <Button variant="outline" className="h-full min-h-[200px] border-2 border-dashed" onClick={handleAddProject}>
+        <Button variant="outline" className="h-full min-h-[200px] border-2 border-dashed" onClick={() => setAddProjectDialogOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Project
         </Button>
       </div>
+       <AddProjectDialog 
+        open={isAddProjectDialogOpen} 
+        onOpenChange={setAddProjectDialogOpen}
+        onAddProject={handleAddProject}
+        loading={isAddingProject}
+      />
     </div>
   );
 }
