@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Trash2, PlusCircle } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
 
 import type { Project, Milestone, Update, ProjectStatus } from '@/lib/types';
 import { projectStatuses } from '@/lib/types';
@@ -173,10 +174,20 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
             <Separator />
             
             <div className="space-y-4">
-              <h4 className="font-semibold">Updates</h4>
+               <div className="flex items-center justify-between">
+                <h4 className="font-semibold">Updates</h4>
+                <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => appendUpdate({ id: uuidv4(), date: Timestamp.now(), title: '', description: '' }, { shouldFocus: true })}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Update
+                </Button>
+              </div>
               <div className="space-y-4">
                  {updates.map((update, index) => (
-                    <UpdateItem key={update.id} update={update} onDelete={() => removeUpdate(index)} />
+                    <UpdateItem key={update.id} index={index} onDelete={() => removeUpdate(index)} />
                 ))}
               </div>
             </div>
