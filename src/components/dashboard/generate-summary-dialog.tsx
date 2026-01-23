@@ -1,24 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrainCircuit } from 'lucide-react';
 import { generateProjectSummary } from '@/ai/flows/generate-project-summary';
 import type { Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type GenerateSummaryDialogProps = {
   customer: Customer;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
 };
 
-export function GenerateSummaryDialog({ customer, open, onOpenChange }: GenerateSummaryDialogProps) {
+export function GenerateSummaryDialog({ customer, children }: GenerateSummaryDialogProps) {
+  const [open, setOpen] = useState(false);
   const [summary, setSummary] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Reset state when the dialog is opened
+  useEffect(() => {
+    if (open) {
+      setSummary('');
+      setLoading(false);
+      setError('');
+    }
+  }, [open]);
+
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -44,7 +54,10 @@ export function GenerateSummaryDialog({ customer, open, onOpenChange }: Generate
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>AI Project Summary for {customer.name}</DialogTitle>

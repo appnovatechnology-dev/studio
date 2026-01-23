@@ -20,7 +20,6 @@ type CustomerCardProps = {
 export function CustomerCard({ customer }: CustomerCardProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const db = useFirestore();
   const isMounted = useRef(true);
 
@@ -90,9 +89,13 @@ export function CustomerCard({ customer }: CustomerCardProps) {
             <DropdownMenuItem onClick={copyToClipboard}>
               <Copy className="mr-2 h-4 w-4" /> Copy Link
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setIsSummaryDialogOpen(true)}>
-              <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
-            </DropdownMenuItem>
+            
+            <GenerateSummaryDialog customer={customer}>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
+              </DropdownMenuItem>
+            </GenerateSummaryDialog>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href={`/admin/${customer.id}`}>
@@ -134,7 +137,6 @@ export function CustomerCard({ customer }: CustomerCardProps) {
           {customer.projects.length} project(s)
         </p>
       </CardContent>
-      <GenerateSummaryDialog customer={customer} open={isSummaryDialogOpen} onOpenChange={setIsSummaryDialogOpen} />
     </Card>
   );
 }
