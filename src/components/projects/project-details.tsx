@@ -98,7 +98,6 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
       name: status,
       completed: false,
     }));
-    const newUpdate: Update = { id: uuidv4(), date: Timestamp.now(), title: 'Project Created', description: 'The project has been initialized.' };
 
     const newProject: Project = {
       id: uuidv4(),
@@ -107,7 +106,7 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
       status: 'Prototyping',
       progress: 0,
       milestones: newMilestones,
-      updates: [newUpdate]
+      updates: []
     };
 
     const newProjects = [...customer.projects, newProject];
