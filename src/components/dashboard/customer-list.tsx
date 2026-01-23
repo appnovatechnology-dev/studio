@@ -14,6 +14,7 @@ export function CustomerList() {
   const db = useFirestore();
 
   useEffect(() => {
+    if (!db) return; // Guard against db being null on initial render
     const q = query(collection(db, 'customers'), orderBy('name', 'asc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const customersData: Customer[] = [];
@@ -33,16 +34,16 @@ export function CustomerList() {
     return unsubscribe;
   }, [db]);
 
-  const handleCustomerChange = () => {
+  const handleCustomerAdded = () => {
     // The onSnapshot listener will automatically refresh the list.
-    // This function is passed to the dialog to trigger any other desired side-effects in the future.
+    // This function can be used for any other desired side-effects in the future.
   };
 
   return (
     <div className="container py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="font-headline text-3xl font-bold">Customers</h1>
-        <AddCustomerDialog onCustomerAdded={handleCustomerChange} />
+        <AddCustomerDialog onCustomerAdded={handleCustomerAdded} />
       </div>
 
       {loading && (
@@ -69,7 +70,7 @@ export function CustomerList() {
       {!loading && customers.length > 0 && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {customers.map((customer) => (
-            <CustomerCard key={customer.id} customer={customer} onDelete={handleCustomerChange} />
+            <CustomerCard key={customer.id} customer={customer} />
           ))}
         </div>
       )}

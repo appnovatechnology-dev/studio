@@ -17,10 +17,9 @@ import { GenerateSummaryDialog } from './generate-summary-dialog';
 
 type CustomerCardProps = {
   customer: Customer;
-  onDelete: () => void;
 };
 
-export function CustomerCard({ customer, onDelete }: CustomerCardProps) {
+export function CustomerCard({ customer }: CustomerCardProps) {
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
@@ -36,6 +35,7 @@ export function CustomerCard({ customer, onDelete }: CustomerCardProps) {
   };
 
   const handleDelete = async () => {
+    if (!db) return;
     setIsDeleting(true);
     const docRef = doc(db, 'customers', customer.id);
     deleteDoc(docRef)
@@ -44,7 +44,7 @@ export function CustomerCard({ customer, onDelete }: CustomerCardProps) {
           title: 'Customer Deleted',
           description: `${customer.name} has been removed successfully.`,
         });
-        onDelete();
+        // The parent's onSnapshot listener will handle the UI update.
       })
       .catch(() => {
         const permissionError = new FirestorePermissionError({
@@ -54,6 +54,7 @@ export function CustomerCard({ customer, onDelete }: CustomerCardProps) {
         errorEmitter.emit('permission-error', permissionError);
       })
       .finally(() => {
+        // This component might be unmounted, but we'll try to set state just in case.
         setIsDeleting(false);
       });
   };
