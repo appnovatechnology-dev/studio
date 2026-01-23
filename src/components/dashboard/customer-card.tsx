@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MoreHorizontal, Eye, Copy, Edit, Trash2, BrainCircuit } from 'lucide-react';
@@ -24,6 +24,14 @@ export function CustomerCard({ customer }: CustomerCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const db = useFirestore();
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    // Set the mounted ref to false when the component unmounts
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const copyToClipboard = () => {
     const publicUrl = `${window.location.origin}/c/${customer.id}`;
@@ -54,8 +62,10 @@ export function CustomerCard({ customer }: CustomerCardProps) {
         errorEmitter.emit('permission-error', permissionError);
       })
       .finally(() => {
-        // This component might be unmounted, but we'll try to set state just in case.
-        setIsDeleting(false);
+        // Only update state if the component is still mounted.
+        if (isMounted.current) {
+          setIsDeleting(false);
+        }
       });
   };
 
