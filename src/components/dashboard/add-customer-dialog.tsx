@@ -12,11 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
+  customerCode: z.string().min(2, { message: 'Customer code must be at least 2 characters.' }).max(10, { message: 'Customer code cannot be longer than 10 characters.' }),
 });
 
 export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => void }) {
@@ -30,6 +30,7 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
     defaultValues: {
       name: '',
       email: '',
+      customerCode: '',
     },
   });
 
@@ -38,12 +39,12 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
     const customersCollection = collection(db, 'customers');
     const newCustomerRef = doc(customersCollection);
     const customerId = newCustomerRef.id;
-    const customerCode = uuidv4().split('-')[0].toUpperCase();
-
+    
     const customerData = {
       id: customerId,
-      customerCode: customerCode,
-      ...values,
+      name: values.name,
+      email: values.email,
+      customerCode: values.customerCode.toUpperCase(),
       projects: [],
       createdAt: serverTimestamp(),
     };
@@ -52,7 +53,7 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
       .then(() => {
         toast({
           title: 'Success',
-          description: `New customer added with code: ${customerCode}`,
+          description: `New customer added with code: ${values.customerCode.toUpperCase()}`,
         });
         form.reset();
         setOpen(false);
@@ -106,6 +107,19 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input placeholder="john.doe@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="customerCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Customer Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., CUST01" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
