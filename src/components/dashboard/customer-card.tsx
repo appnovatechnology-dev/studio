@@ -25,9 +25,9 @@ export function CustomerCard({ customer, onDelete }: CustomerCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const db = useFirestore();
-  const publicUrl = `${window.location.origin}/c/${customer.id}`;
 
   const copyToClipboard = () => {
+    const publicUrl = `${window.location.origin}/c/${customer.id}`;
     navigator.clipboard.writeText(publicUrl);
     toast({
       title: 'Copied!',
