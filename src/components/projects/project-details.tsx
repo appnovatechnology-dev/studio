@@ -29,7 +29,7 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
         setCustomer({ id: doc.id, ...doc.data() } as Customer);
       } else {
         // Handle customer not found
-        console.error("No such customer!");
+        setCustomer(null);
       }
       setLoading(false);
     }, (error) => {
