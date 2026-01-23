@@ -72,53 +72,56 @@ export function CustomerCard({ customer, onDelete }: CustomerCardProps) {
             <CardTitle className="font-headline">{customer.name}</CardTitle>
             <CardDescription>{customer.email}</CardDescription>
           </div>
-          <AlertDialog>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link href={`/c/${customer.id}`} target="_blank">
-                    <Eye className="mr-2 h-4 w-4" /> View Public Page
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={copyToClipboard}>
-                  <Copy className="mr-2 h-4 w-4" /> Copy Link
-                </DropdownMenuItem>
-                 <DropdownMenuItem onSelect={() => setIsSummaryDialogOpen(true)}>
-                  <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href={`/admin/${customer.id}`}>
-                    <Edit className="mr-2 h-4 w-4" /> Edit Projects
-                  </Link>
-                </DropdownMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={`/c/${customer.id}`} target="_blank">
+                  <Eye className="mr-2 h-4 w-4" /> View Public Page
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={copyToClipboard}>
+                <Copy className="mr-2 h-4 w-4" /> Copy Link
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setIsSummaryDialogOpen(true)}>
+                <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/${customer.id}`}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit Projects
+                </Link>
+              </DropdownMenuItem>
+              <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <DropdownMenuItem className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    className="text-destructive focus:text-destructive"
+                  >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Customer
                   </DropdownMenuItem>
                 </AlertDialogTrigger>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the customer and all associated project data.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the customer and all associated project data.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardHeader>
         <CardContent className="flex-1">
           <p className="text-sm text-muted-foreground">
