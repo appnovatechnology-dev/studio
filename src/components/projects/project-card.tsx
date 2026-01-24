@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,7 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MilestoneItem } from './milestone-item';
 import { UpdateItem } from './update-item';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { GenerateProjectSummaryDialog } from './generate-project-summary-dialog';
@@ -53,6 +53,9 @@ type ProjectCardProps = {
 };
 
 export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [showSummaryDialog, setShowSummaryDialog] = useState(false);
+
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
@@ -93,6 +96,7 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
 
   const handleDeleteProject = () => {
     onDelete(project.id);
+    setShowDeleteAlert(false);
   };
   
   const handleMilestoneToggle = (id: string, completed: boolean) => {
@@ -104,6 +108,28 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
 
   return (
     <Card>
+      <GenerateProjectSummaryDialog
+        project={project}
+        open={showSummaryDialog}
+        onOpenChange={setShowSummaryDialog}
+      />
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the '{project.name}' project. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
@@ -141,36 +167,16 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <GenerateProjectSummaryDialog project={project}>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
-                    </DropdownMenuItem>
-                  </GenerateProjectSummaryDialog>
+                  <DropdownMenuItem onSelect={() => setShowSummaryDialog(true)}>
+                    <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete Project
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this project?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete the '{project.name}' project. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive hover:bg-destructive/90">
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <DropdownMenuItem
+                    onSelect={() => setShowDeleteAlert(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Project
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

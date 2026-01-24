@@ -5,17 +5,17 @@ import { BrainCircuit } from 'lucide-react';
 import { generateProjectSummary } from '@/ai/flows/generate-project-summary';
 import type { Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type GenerateProjectSummaryDialogProps = {
   project: Project;
-  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
-export function GenerateProjectSummaryDialog({ project, children }: GenerateProjectSummaryDialogProps) {
-  const [open, setOpen] = useState(false);
+export function GenerateProjectSummaryDialog({ project, open, onOpenChange }: GenerateProjectSummaryDialogProps) {
   const [summary, setSummary] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +28,6 @@ export function GenerateProjectSummaryDialog({ project, children }: GenerateProj
       setError('');
     }
   }, [open]);
-
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -57,10 +56,7 @@ export function GenerateProjectSummaryDialog({ project, children }: GenerateProj
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>AI Project Summary for {project.name}</DialogTitle>
