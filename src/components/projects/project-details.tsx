@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot, updateDoc, Timestamp } from 'firebase/firestore';
-import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { type Customer, type Project, type Milestone, type Update, projectStatuses } from '@/lib/types';
+import { doc, onSnapshot, Timestamp } from 'firebase/firestore';
+import { useFirestore, updateDocumentNonBlocking, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { type Customer, type Project, type Milestone, projectStatuses } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,6 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAddProjectDialogOpen, setAddProjectDialogOpen] = useState(false);
-  const [isAddingProject, setIsAddingProject] = useState(false);
   const { toast } = useToast();
   const db = useFirestore();
 
@@ -28,7 +27,6 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
       if (doc.exists()) {
         setCustomer({ id: doc.id, ...doc.data() } as Customer);
       } else {
-        // Handle customer not found
         setCustomer(null);
       }
       setLoading(false);
@@ -43,7 +41,7 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
     return () => unsub();
   }, [customerId, db]);
 
-  const handleSaveProject = async (updatedProject: Project) => {
+  const handleSaveProject = (updatedProject: Project) => {
     if (!customer) return;
     const customerRef = doc(db, 'customers', customerId);
     const projectIndex = customer.projects.findIndex(p => p.id === updatedProject.id);
@@ -54,42 +52,21 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
     }
 
     const updatedData = { projects: newProjects };
-    updateDoc(customerRef, updatedData)
-      .then(() => {
-        toast({ title: "Success", description: `Project "${updatedProject.name}" has been saved.` });
-      })
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({
-          path: customerRef.path,
-          operation: 'update',
-          requestResourceData: updatedData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+    updateDocumentNonBlocking(customerRef, updatedData);
+    toast({ title: "Success", description: `Project "${updatedProject.name}" has been saved.` });
   };
   
-  const handleDeleteProject = async (projectId: string) => {
+  const handleDeleteProject = (projectId: string) => {
     if (!customer) return;
     const customerRef = doc(db, 'customers', customerId);
     const newProjects = customer.projects.filter(p => p.id !== projectId);
     const updatedData = { projects: newProjects };
-    updateDoc(customerRef, updatedData)
-      .then(() => {
-        toast({ title: "Project Deleted", description: "The project has been removed." });
-      })
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({
-          path: customerRef.path,
-          operation: 'update',
-          requestResourceData: updatedData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+    updateDocumentNonBlocking(customerRef, updatedData);
+    toast({ title: "Project Deleted", description: "The project has been removed." });
   };
 
-  const handleAddProject = async (values: z.infer<typeof addProjectFormSchema>) => {
+  const handleAddProject = (values: z.infer<typeof addProjectFormSchema>) => {
     if (!customer) return;
-    setIsAddingProject(true);
 
     const customerRef = doc(db, 'customers', customerId);
 
@@ -112,22 +89,9 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
     const newProjects = [...customer.projects, newProject];
     const updatedData = { projects: newProjects };
     
-    updateDoc(customerRef, updatedData)
-      .then(() => {
-        toast({ title: "Project Added", description: "A new project has been added." });
-        setAddProjectDialogOpen(false);
-      })
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({
-          path: customerRef.path,
-          operation: 'update',
-          requestResourceData: updatedData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsAddingProject(false);
-      });
+    updateDocumentNonBlocking(customerRef, updatedData);
+    toast({ title: "Project Added", description: "A new project has been added." });
+    setAddProjectDialogOpen(false);
   };
 
   if (loading) {
@@ -169,7 +133,6 @@ export function ProjectDetails({ customerId }: { customerId: string }) {
         open={isAddProjectDialogOpen} 
         onOpenChange={setAddProjectDialogOpen}
         onAddProject={handleAddProject}
-        loading={isAddingProject}
       />
     </div>
   );

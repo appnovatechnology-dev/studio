@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { collection, doc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, setDocumentNonBlocking } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
@@ -21,7 +21,6 @@ const formSchema = z.object({
 
 export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => void }) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const db = useFirestore();
 
@@ -34,8 +33,7 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setLoading(true);
+  function onSubmit(values: z.infer<typeof formSchema>) {
     const customersCollection = collection(db, 'customers');
     const newCustomerRef = doc(customersCollection);
     const customerId = newCustomerRef.id;
@@ -49,27 +47,15 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
       createdAt: serverTimestamp(),
     };
 
-    setDoc(newCustomerRef, customerData)
-      .then(() => {
-        toast({
-          title: 'Success',
-          description: `New customer added with code: ${values.customerCode.toUpperCase()}`,
-        });
-        form.reset();
-        setOpen(false);
-        onCustomerAdded();
-      })
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({
-          path: newCustomerRef.path,
-          operation: 'create',
-          requestResourceData: customerData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    setDocumentNonBlocking(newCustomerRef, customerData, {});
+
+    toast({
+      title: 'Success',
+      description: `New customer added with code: ${values.customerCode.toUpperCase()}`,
+    });
+    form.reset();
+    setOpen(false);
+    onCustomerAdded();
   }
 
   return (
@@ -126,8 +112,8 @@ export function AddCustomerDialog({ onCustomerAdded }: { onCustomerAdded: () => 
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Adding...' : 'Add Customer'}
+              <Button type="submit">
+                Add Customer
               </Button>
             </DialogFooter>
           </form>

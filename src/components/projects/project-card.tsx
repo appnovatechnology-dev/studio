@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -48,14 +48,11 @@ const projectSchema = z.object({
 
 type ProjectCardProps = {
   project: Project;
-  onSave: (updatedProject: Project) => Promise<void>;
-  onDelete: (projectId: string) => Promise<void>;
+  onSave: (updatedProject: Project) => void;
+  onDelete: (projectId: string) => void;
 };
 
 export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const form = useForm<z.infer<typeof projectSchema>>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
@@ -89,18 +86,13 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
     return totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
   }, [watchedMilestones]);
 
-  const onSubmit = async (data: z.infer<typeof projectSchema>) => {
-    setIsSaving(true);
+  const onSubmit = (data: z.infer<typeof projectSchema>) => {
     const updatedData = { ...data, progress: Math.round(progress) };
-    await onSave({ ...project, ...updatedData });
-    setIsSaving(false);
-    // form.reset(updatedData) has been removed to prevent race conditions.
+    onSave({ ...project, ...updatedData });
   };
 
-  const handleDeleteProject = async () => {
-    setIsDeleting(true);
-    await onDelete(project.id);
-    // Component will be unmounted by parent
+  const handleDeleteProject = () => {
+    onDelete(project.id);
   };
   
   const handleMilestoneToggle = (id: string, completed: boolean) => {
@@ -173,8 +165,8 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteProject} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                          {isDeleting ? 'Deleting...' : 'Delete'}
+                        <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive hover:bg-destructive/90">
+                          Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -247,8 +239,8 @@ export function ProjectCard({ project, onSave, onDelete }: ProjectCardProps) {
           </CardContent>
 
           <div className="p-6 pt-0">
-             <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
+             <Button type="submit" disabled={!form.formState.isDirty}>
+              Save Changes
             </Button>
           </div>
         </form>

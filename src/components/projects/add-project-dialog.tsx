@@ -18,10 +18,9 @@ type AddProjectDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAddProject: (values: z.infer<typeof addProjectFormSchema>) => void;
-  loading: boolean;
 };
 
-export function AddProjectDialog({ open, onOpenChange, onAddProject, loading }: AddProjectDialogProps) {
+export function AddProjectDialog({ open, onOpenChange, onAddProject }: AddProjectDialogProps) {
   const form = useForm<z.infer<typeof addProjectFormSchema>>({
     resolver: zodResolver(addProjectFormSchema),
     defaultValues: {
@@ -70,8 +69,8 @@ export function AddProjectDialog({ open, onOpenChange, onAddProject, loading }: 
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Adding...' : 'Add Project'}
+              <Button type="submit">
+                Add Project
               </Button>
             </DialogFooter>
           </form>

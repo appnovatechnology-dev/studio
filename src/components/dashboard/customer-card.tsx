@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { MoreHorizontal, Eye, Copy, Edit, Trash2, Building } from 'lucide-react';
-import { doc, deleteDoc } from 'firebase/firestore';
-import { useFirestore, FirestorePermissionError, errorEmitter } from '@/firebase';
+import { MoreHorizontal, Eye, Copy, Edit, Trash2, Building, BrainCircuit } from 'lucide-react';
+import { doc } from 'firebase/firestore';
+import { useFirestore, deleteDocumentNonBlocking } from '@/firebase';
 import type { Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { GenerateSummaryDialog } from './generate-summary-dialog';
 
 type CustomerCardProps = {
   customer: Customer;
@@ -18,16 +18,7 @@ type CustomerCardProps = {
 
 export function CustomerCard({ customer }: CustomerCardProps) {
   const { toast } = useToast();
-  const [isDeleting, setIsDeleting] = useState(false);
   const db = useFirestore();
-  const isMounted = useRef(true);
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
 
   const copyToClipboard = () => {
     const publicUrl = `${window.location.origin}/c/${customer.id}`;
@@ -38,29 +29,14 @@ export function CustomerCard({ customer }: CustomerCardProps) {
     });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!db) return;
-    setIsDeleting(true);
     const docRef = doc(db, 'customers', customer.id);
-    deleteDoc(docRef)
-      .then(() => {
-        toast({
-          title: 'Customer Deleted',
-          description: `${customer.name} has been removed successfully.`,
-        });
-      })
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        if (isMounted.current) {
-          setIsDeleting(false);
-        }
-      });
+    deleteDocumentNonBlocking(docRef);
+    toast({
+      title: 'Customer Deleted',
+      description: `${customer.name} has been removed successfully.`,
+    });
   };
 
   return (
@@ -80,6 +56,12 @@ export function CustomerCard({ customer }: CustomerCardProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <GenerateSummaryDialog customer={customer}>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <BrainCircuit className="mr-2 h-4 w-4" /> Generate Summary
+                </DropdownMenuItem>
+            </GenerateSummaryDialog>
+            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href={`/c/${customer.id}`} target="_blank">
                 <Eye className="mr-2 h-4 w-4" /> View Public Page
@@ -113,8 +95,8 @@ export function CustomerCard({ customer }: CustomerCardProps) {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                    Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
